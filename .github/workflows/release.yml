@@ -1,0 +1,55 @@
+name: Build and Release macOS App
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.release.outputs.upload_url }}
+    steps:
+    - name: Create Release
+      id: release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: LANKey ${{ github.ref_name }}
+        draft: false
+        prerelease: false
+
+  build-macos-app:
+    needs: create-release
+    strategy:
+      matrix:
+        platform:
+          - runner: macos-14
+            arch: arm64
+          - runner: macos-12
+            arch: x86_64
+    runs-on: ${{ matrix.platform.runner }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.12
+      - name: Install dependencies
+        run: pip install -rrequirements.txt
+      - name: Build macOS App
+        run: ./build.sh
+      - name: Upload Release Asset
+        id: upload_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_name: LANKey.${{ github.ref_name }}.${{ matrix.platform.arch }}.dmg
+          asset_content_type: application/x-apple-diskimage
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist/LANKey.dmg
