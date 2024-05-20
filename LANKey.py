@@ -146,12 +146,17 @@ class LANKey(prefs.Prefs):
             self.save_prefs()
             self.reset_menu()
 
-    def do_action(self, _):
-        # TODO: add some LANKEY_* environment variables
+    def do_action(self, payload):
         if self.prefs["action"] == "":
             print("got told to act, but no action set")
             return
-        output = subprocess.check_output(self.prefs["action"], shell=True)
+        output = subprocess.check_output(
+            self.prefs["action"],
+            shell=True,
+            env={
+                "LANKEY_FROM_HOST": payload["from"],
+            },
+        )
         # TODO: log this to a file that the user can open with another menu item
         print("action output ---begin\n", output.decode(), "\n---end")
 
