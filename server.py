@@ -62,7 +62,7 @@ class Server:
                     hosts[msg["from"]] = time.time()
                     continue
                 if msg["to"] == socket.gethostname():
-                    self.cb(msg)
+                    threading.Thread(target=self.cb, args=(msg,)).start()
             except socket.timeout:
                 pass
 
