@@ -43,7 +43,6 @@ class Server:
             ),
         )
         self.server_thread.start()
-        print("Server started")
 
     def loop(self, status, hosts):
         while True:
@@ -89,4 +88,3 @@ class Server:
         self.status[0] = False
         self.server_thread.join()
         self.server_socket.close()
-        print("Server stopped")

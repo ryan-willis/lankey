@@ -148,9 +148,9 @@ class LANKey(prefs.Prefs):
 
     def do_action(self, payload):
         if self.prefs["action"] == "":
-            print("got told to act, but no action set")
             return
-        output = subprocess.check_output(
+        # output = subprocess.check_output(
+        subprocess.check_output(
             self.prefs["action"],
             shell=True,
             env={
@@ -158,7 +158,7 @@ class LANKey(prefs.Prefs):
             },
         )
         # TODO: log this to a file that the user can open with another menu item
-        print("action output ---begin\n", output.decode(), "\n---end")
+        # print("action output ---begin\n", output.decode(), "\n---end")
 
     def set_hosts(self, hosts):
         self.hosts_list = hosts
@@ -205,7 +205,7 @@ class LANKey(prefs.Prefs):
         for live_host in list(self.hosts_list):
             for host, host_key in self.prefs["hosts"].items():
                 if live_host == host and key_value == f"Key.{host_key}":
-                    print(f"pressed {key_value} for {host}")
+                    # print(f"pressed {key_value} for {host}")
                     self.server.send(host)
 
     def run(self):
