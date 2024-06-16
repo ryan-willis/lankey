@@ -55,8 +55,9 @@ class Server:
                     msg = json.loads(msg_raw)
                 except json.JSONDecodeError:
                     continue
-                if msg["from"] == socket.gethostname():
-                    continue
+                # Allow choosing this host from the list and sending messages to itself
+                # if msg["from"] == socket.gethostname():
+                #     continue
                 if msg["to"] == "*":
                     hosts[msg["from"]] = time.time()
                     continue
