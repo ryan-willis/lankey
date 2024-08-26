@@ -22,7 +22,7 @@ jobs:
         draft: false
         prerelease: false
 
-  build-macos-app:
+  build-macos-apps:
     needs: create-release
     strategy:
       matrix:
@@ -41,10 +41,10 @@ jobs:
           python-version: 3.12
       - name: Install dependencies
         run: pip install -rrequirements.txt
-      - name: Build macOS App
+      - name: Build macOS Apps
         run: ./build.sh
-      - name: Upload Release Asset
-        id: upload_release_asset
+      - name: Upload Main Release Asset
+        id: upload_main_release_asset
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -52,4 +52,14 @@ jobs:
           asset_name: LANKey.${{ github.ref_name }}.${{ matrix.platform.arch }}.dmg
           asset_content_type: application/x-apple-diskimage
           upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ./dist/LANKey.dmg
+          asset_path: ./dist-main/LANKey.dmg
+      - name: Upload Receiver Release Asset
+        id: upload_receiver_release_asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          asset_name: LANKeyReceiver.${{ github.ref_name }}.${{ matrix.platform.arch }}.dmg
+          asset_content_type: application/x-apple-diskimage
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: ./dist-receiver/LANKeyReceiver.dmg

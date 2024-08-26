@@ -35,34 +35,42 @@ def osa(s: str):
 
 
 class LANKey(prefs.Prefs):
-    def __init__(self):
-        self.listener = pynput.keyboard.Listener(on_press=self.on_press)
-        self.refresh_timer = rumps.Timer(self.refresh_hosts, 2)
-        self.app = rumps.App("LANKey", "⌥")
+    def __init__(self, receiver=False):
+        self.receiver = receiver
+        if not self.receiver:
+            self.listener = pynput.keyboard.Listener(on_press=self.on_press)
+            self.refresh_timer = rumps.Timer(self.refresh_hosts, 2)
         self.hosts_list = []
+        self.app = rumps.App("LANKey", "⌥")
         self.load_prefs()
         # TODO: allow the user to set the port
         # and show that port somewhere in the menu
         # port = int(valid_port(self.prefs["port"]) or prefs.DEFAULT_PORT)
         port = prefs.DEFAULT_PORT
-        self.server = server.Server(port, self.do_action, self.set_hosts)
+        if not self.receiver:
+            self.server = server.Server(port, self.do_action, self.set_hosts)
+        else:
+            self.server = server.Server(port, self.do_action)
         self.reset_menu(True)
 
     def reset_menu(self, initial=False):
         self.app.menu.clear()
         items = []
-        if not self.listener.IS_TRUSTED:
-            items.append(
-                rumps.MenuItem(
-                    "Input Monitoring and Accessibility permissions are required."
+        if not self.receiver:
+            if not self.listener.IS_TRUSTED:
+                items.append(
+                    rumps.MenuItem(
+                        "Input Monitoring and Accessibility permissions are required."
+                    )
                 )
-            )
-            items.append(rumps.MenuItem("Quit and reopen the app to try again."))
-            items.append(rumps.separator)
+                items.append(rumps.MenuItem("Quit and reopen the app to try again."))
+                items.append(rumps.separator)
 
         # build host menu
         host_menu = rumps.MenuItem("Hosts")
-        if len(self.hosts_list) == 0:
+        if self.receiver:
+            pass
+        elif len(self.hosts_list) == 0:
             host_menu.add(rumps.MenuItem("No hosts"))
         else:
             for host in list(self.hosts_list):
@@ -85,9 +93,10 @@ class LANKey(prefs.Prefs):
                         key_item.state = True
                     _host.add(key_item)
                 host_menu.add(_host)
-        host_menu.add(rumps.separator)
-        host_menu.add(rumps.MenuItem("Refresh", self.refresh_hosts))
-        items.append(host_menu)
+        if not self.receiver:
+            host_menu.add(rumps.separator)
+            host_menu.add(rumps.MenuItem("Refresh", self.refresh_hosts))
+            items.append(host_menu)
 
         # build action menu
         action_menu = rumps.MenuItem("Action")
@@ -209,9 +218,10 @@ class LANKey(prefs.Prefs):
                     self.server.send(host)
 
     def run(self):
-        self.listener.start()
         self.server.start()
-        self.refresh_timer.start()
+        if not self.receiver:
+            self.listener.start()
+            self.refresh_timer.start()
         self.app.run()
 
 
