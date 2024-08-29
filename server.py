@@ -55,7 +55,7 @@ class Server:
                     msg = json.loads(msg_raw)
                 except json.JSONDecodeError:
                     continue
-                # Allow choosing this host from the list and sending messages to itself
+                # disallow choosing this host from the list and sending messages to itself
                 # if msg["from"] == socket.gethostname():
                 #     continue
                 if msg["to"] == "*":
@@ -72,17 +72,18 @@ class Server:
             if time.time() - HOST_TIMEOUT > self.hosts[host]:
                 self.hosts.pop(host)
         self.sh(self.hosts)
-        self.send("*")
+        self.send("*", "none")
 
-    def send(self, host: str):
+    def send(self, host: str, key: str):
         msg = json.dumps(
             {
                 "from": socket.gethostname(),
                 "to": host,
+                "key": key,
             }
-        )
+        ).encode()
         # TODO: encrypt the encoded payload using self.pw
-        self.beacon_socket.sendto(msg.encode(), ("255.255.255.255", self.port))
+        self.beacon_socket.sendto(msg, ("255.255.255.255", self.port))
 
     def stop(self):
         self.beacon_timer.stop()

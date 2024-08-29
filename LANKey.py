@@ -74,22 +74,29 @@ class LANKey(prefs.Prefs):
             host_menu.add(rumps.MenuItem("No hosts"))
         else:
             for host in list(self.hosts_list):
-                if host in self.prefs["hosts"]:
-                    _host = rumps.MenuItem(f"{host} [{self.prefs['hosts'][host]}]")
+                if (
+                    host in self.prefs["hosts_v2"]
+                    and len(self.prefs["hosts_v2"][host]) > 0
+                ):
+                    _host = rumps.MenuItem(
+                        f"{host} [{','.join(self.prefs['hosts_v2'][host])}]"
+                    )
                 else:
                     _host = rumps.MenuItem(host)
 
-                if self.prefs["hosts"].get(host) is not None:
+                if self.prefs["hosts_v2"].get(host) is not None:
                     _host.add(
                         rumps.MenuItem(
                             "Clear",
-                            callback=self.set_host_key(host, self.prefs["hosts"][host]),
+                            callback=self.set_host_key(
+                                host, self.prefs["hosts_v2"][host]
+                            ),
                         )
                     )
                     _host.add(rumps.separator)
                 for k in pynput.keyboard.Key.__members__.keys():
-                    key_item = rumps.MenuItem(k, callback=self.set_host_key(host, k))
-                    if self.prefs["hosts"].get(host) == k:
+                    key_item = rumps.MenuItem(k, callback=self.set_host_key(host, [k]))
+                    if k in self.prefs["hosts_v2"].get(host, []):
                         key_item.state = True
                     _host.add(key_item)
                 host_menu.add(_host)
@@ -155,7 +162,7 @@ class LANKey(prefs.Prefs):
             self.save_prefs()
             self.reset_menu()
 
-    def do_action(self, payload):
+    def do_action(self, msg):
         if self.prefs["action"] == "":
             return
         # output = subprocess.check_output(
@@ -163,7 +170,8 @@ class LANKey(prefs.Prefs):
             self.prefs["action"],
             shell=True,
             env={
-                "LANKEY_FROM_HOST": payload["from"],
+                "LANKEY_FROM_HOST": msg["from"],
+                "LANKEY_FROM_KEY": msg.get("key", "none"),
             },
         )
         # TODO: log this to a file that the user can open with another menu item
@@ -181,10 +189,15 @@ class LANKey(prefs.Prefs):
     # returns a callback
     def set_host_key(self, host, key):
         def callback(_):
-            if self.prefs["hosts"].get(host) == key:
-                del self.prefs["hosts"][host]
-            else:
-                self.prefs["hosts"][host] = key
+            # ensure it exists in the config
+            if self.prefs["hosts_v2"].get(host) is None:
+                self.prefs["hosts_v2"][host] = []
+            # add/remove
+            for k in key:
+                if k in self.prefs["hosts_v2"].get(host):
+                    self.prefs["hosts_v2"][host].remove(k)
+                else:
+                    self.prefs["hosts_v2"][host].append(k)
             self.save_prefs()
             self.reset_menu()
 
@@ -212,10 +225,11 @@ class LANKey(prefs.Prefs):
 
         self.reset_menu()
         for live_host in list(self.hosts_list):
-            for host, host_key in self.prefs["hosts"].items():
-                if live_host == host and key_value == f"Key.{host_key}":
-                    # print(f"pressed {key_value} for {host}")
-                    self.server.send(host)
+            for host, host_keys in self.prefs["hosts_v2"].items():
+                for host_key in host_keys:
+                    if live_host == host and key_value == f"Key.{host_key}":
+                        # print(f"pressed {key_value} for {host}")
+                        self.server.send(host, host_key)
 
     def run(self):
         self.server.start()
